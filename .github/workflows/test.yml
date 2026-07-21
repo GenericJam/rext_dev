@@ -26,10 +26,10 @@ jobs:
       # rext_dev depends on rext via a `path: "../rext"` dep, so rext must be
       # checked out as a sibling. When both repos live under the same org this
       # resolves cleanly; adjust the repository ref if that changes.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: rext_dev
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: genericjam/rext
           path: rext
@@ -40,7 +40,7 @@ jobs:
           otp-version: ${{ matrix.otp }}
 
       - name: Cache deps + _build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             rext_dev/deps
