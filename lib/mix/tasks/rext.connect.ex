@@ -1,16 +1,16 @@
-defmodule Mix.Tasks.Rect.Connect do
-  @shortdoc "Open an IEx remote shell into a running rect node"
+defmodule Mix.Tasks.Rext.Connect do
+  @shortdoc "Open an IEx remote shell into a running rext node"
   @moduledoc """
-  Connect an interactive IEx session into a running rect app over Erlang
+  Connect an interactive IEx session into a running rext app over Erlang
   distribution — the dev/agent front door.
 
-      mix rect.connect
-      mix rect.connect --node myapp@127.0.0.1 --cookie mysecret
+      mix rext.connect
+      mix rext.connect --node myapp@127.0.0.1 --cookie mysecret
 
   Desktop makes this trivial compared to mob: the node is local, so there's no
   adb/simctl device discovery and no EPMD tunnel setup — just a `--remsh`.
 
-  Once connected you have the full node: inspect windows with `Rect.Test`, hot
+  Once connected you have the full node: inspect windows with `Rext.Test`, hot
   push modules with `r/1` / `IEx.Helpers`, RPC into any process.
   """
   use Mix.Task
@@ -22,13 +22,13 @@ defmodule Mix.Tasks.Rect.Connect do
 
     app = Mix.Project.config()[:app]
     target = opts[:node] || "#{app}@127.0.0.1"
-    cookie = opts[:cookie] || "rect_secret"
+    cookie = opts[:cookie] || "rext_secret"
 
     cmd =
-      "iex --name rect_console_#{:erlang.unique_integer([:positive])}@127.0.0.1 " <>
+      "iex --name rext_console_#{:erlang.unique_integer([:positive])}@127.0.0.1 " <>
         "--cookie #{cookie} --remsh #{target}"
 
-    Mix.shell().info("[rect.connect] #{cmd}")
+    Mix.shell().info("[rext.connect] #{cmd}")
     Mix.shell().cmd(cmd)
   end
 end

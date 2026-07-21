@@ -1,10 +1,10 @@
-defmodule RectDev.Boot do
+defmodule RextDev.Boot do
   @moduledoc """
-  Boot helper invoked by `mix rect.run` inside a freshly-named distributed VM.
+  Boot helper invoked by `mix rext.run` inside a freshly-named distributed VM.
 
   Opens the app's windows, then launches the native render backend for the app's
   primary window — building the renderer first if it isn't built yet, so
-  `mix rect.run` is a genuine one-command launch. Kept out of `rect` (the runtime
+  `mix rext.run` is a genuine one-command launch. Kept out of `rext` (the runtime
   lib) because launching/building the renderer is a dev-only concern that must
   never be a dependency of a shipped app.
   """
@@ -13,13 +13,13 @@ defmodule RectDev.Boot do
   @doc "Open the configured app's windows and launch the render backend."
   @spec run() :: :ok
   def run do
-    case Application.get_env(:rect, :app) do
+    case Application.get_env(:rext, :app) do
       nil ->
-        Logger.error("[rect.run] no app configured — set `config :rect, :app, MyApp`")
+        Logger.error("[rext.run] no app configured — set `config :rext, :app, MyApp`")
 
       app ->
-        Rect.boot(app)
-        Logger.info("[rect.run] booted #{inspect(app)} windows")
+        Rext.boot(app)
+        Logger.info("[rext.run] booted #{inspect(app)} windows")
         maybe_launch_renderer(primary_window(app))
     end
 
@@ -37,21 +37,21 @@ defmodule RectDev.Boot do
 
   defp maybe_launch_renderer(window_id) do
     cond do
-      System.get_env("RECT_HEADLESS") == "1" ->
-        Logger.info("[rect.run] headless — skipping render backend")
+      System.get_env("REXT_HEADLESS") == "1" ->
+        Logger.info("[rext.run] headless — skipping render backend")
 
       bin = resolve_renderer() ->
         launch_renderer(bin, window_id)
 
       true ->
-        Logger.warning("[rect.run] render backend unavailable; running headless")
+        Logger.warning("[rext.run] render backend unavailable; running headless")
     end
   end
 
   defp launch_renderer(bin, window_id) do
     app = app_bundle(bin)
-    port = Integer.to_string(Rect.Bridge.port())
-    log = Path.join(System.tmp_dir!(), "rect_renderer.log")
+    port = Integer.to_string(Rext.Bridge.port())
+    log = Path.join(System.tmp_dir!(), "rext_renderer.log")
 
     # Launch the .app through LaunchServices (`open`), NOT by exec'ing the inner
     # binary. A GUI app spawned as a BEAM port child runs under the BEAM's
@@ -61,17 +61,17 @@ defmodule RectDev.Boot do
     # the renderer's log for diagnosis.
     #
     # `-W` blocks until the app quits, giving the lifecycle signal: close the
-    # window → app exits → halt the BEAM, so `mix rect.run` leaves no residual.
+    # window → app exits → halt the BEAM, so `mix rext.run` leaves no residual.
     spawn(fn ->
       Logger.info(
-        "[rect.run] launched render backend (via open) for window #{inspect(window_id)}"
+        "[rext.run] launched render backend (via open) for window #{inspect(window_id)}"
       )
 
       {out, status} =
         System.cmd("open", open_args(app, port, window_id, log), stderr_to_stdout: true)
 
       if out != "", do: IO.write(out)
-      Logger.info("[rect.run] render backend exited (#{status}); log: #{log} — shutting down")
+      Logger.info("[rext.run] render backend exited (#{status}); log: #{log} — shutting down")
       System.halt(0)
     end)
   end
@@ -88,22 +88,22 @@ defmodule RectDev.Boot do
       "--stderr",
       log,
       "--env",
-      "RECT_PORT=#{port}",
+      "REXT_PORT=#{port}",
       "--env",
-      "RECT_WINDOW=#{window_id}",
+      "REXT_WINDOW=#{window_id}",
       app
     ]
   end
 
   @doc false
-  # .../RectRenderer.app/Contents/MacOS/rect_renderer → .../RectRenderer.app
+  # .../RextRenderer.app/Contents/MacOS/rext_renderer → .../RextRenderer.app
   @spec app_bundle(String.t()) :: String.t()
   def app_bundle(bin), do: bin |> Path.dirname() |> Path.dirname() |> Path.dirname()
 
   # Locate the renderer binary, building it once if it hasn't been built yet.
   # Returns the path, or nil if it can't be found or built.
   defp resolve_renderer do
-    case System.get_env("RECT_RENDERER") do
+    case System.get_env("REXT_RENDERER") do
       path when is_binary(path) ->
         # A user-specified path is used as-is (we don't build someone else's binary).
         if File.exists?(path), do: path
@@ -140,21 +140,21 @@ defmodule RectDev.Boot do
     script = Path.join(Path.dirname(bin), "../../../build.sh")
 
     if File.exists?(script) do
-      Logger.info("[rect.run] building render backend (#{script})…")
+      Logger.info("[rext.run] building render backend (#{script})…")
 
       case System.cmd("bash", [script], stderr_to_stdout: true) do
         {_out, 0} -> if File.exists?(bin), do: bin
-        {out, code} -> Logger.warning("[rect.run] renderer build failed (#{code}):\n#{out}")
+        {out, code} -> Logger.warning("[rext.run] renderer build failed (#{code}):\n#{out}")
       end
     else
-      Logger.warning("[rect.run] no renderer and no build script at #{script}")
+      Logger.warning("[rext.run] no renderer and no build script at #{script}")
       nil
     end
   end
 
-  # The prebuilt macOS renderer inside the rect dependency.
+  # The prebuilt macOS renderer inside the rext dependency.
   defp default_renderer do
-    case :code.priv_dir(:rect) do
+    case :code.priv_dir(:rext) do
       {:error, _} ->
         nil
 
@@ -164,10 +164,10 @@ defmodule RectDev.Boot do
           "..",
           "native",
           "macos",
-          "RectRenderer.app",
+          "RextRenderer.app",
           "Contents",
           "MacOS",
-          "rect_renderer"
+          "rext_renderer"
         ])
     end
   end

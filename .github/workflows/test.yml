@@ -23,16 +23,16 @@ jobs:
           - elixir: '1.20'
             otp: '29'
     steps:
-      # rect_dev depends on rect via a `path: "../rect"` dep, so rect must be
+      # rext_dev depends on rext via a `path: "../rext"` dep, so rext must be
       # checked out as a sibling. When both repos live under the same org this
       # resolves cleanly; adjust the repository ref if that changes.
       - uses: actions/checkout@v4
         with:
-          path: rect_dev
+          path: rext_dev
       - uses: actions/checkout@v4
         with:
-          repository: genericjam/rect
-          path: rect
+          repository: genericjam/rext
+          path: rext
 
       - uses: erlef/setup-beam@v1
         with:
@@ -43,23 +43,23 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            rect_dev/deps
-            rect_dev/_build
-          key: mix-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('rect_dev/**/mix.lock') }}
+            rext_dev/deps
+            rext_dev/_build
+          key: mix-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('rext_dev/**/mix.lock') }}
           restore-keys: mix-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-
 
       - name: deps.get
-        working-directory: rect_dev
+        working-directory: rext_dev
         run: mix deps.get
       - name: compile
-        working-directory: rect_dev
+        working-directory: rext_dev
         run: mix compile --warnings-as-errors
       - name: Format check
-        working-directory: rect_dev
+        working-directory: rext_dev
         run: mix format --check-formatted
       - name: Credo (strict)
-        working-directory: rect_dev
+        working-directory: rext_dev
         run: mix credo --strict
       - name: Tests
-        working-directory: rect_dev
+        working-directory: rext_dev
         run: mix test

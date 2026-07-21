@@ -1,18 +1,18 @@
-defmodule RectDev.MixProject do
+defmodule RextDev.MixProject do
   use Mix.Project
 
   @version "0.1.0"
-  @source_url "https://github.com/genericjam/rect_dev"
+  @source_url "https://github.com/genericjam/rext_dev"
 
   def project do
     [
-      app: :rect_dev,
+      app: :rext_dev,
       version: @version,
       elixir: "~> 1.20",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
-      description: "Dev + agent tooling for rect: run, connect, and (soon) the MCP server.",
+      description: "Dev + agent tooling for rext: run, connect, and (soon) the MCP server.",
       package: package(),
       docs: docs(),
       source_url: @source_url
@@ -25,7 +25,7 @@ defmodule RectDev.MixProject do
 
   defp deps do
     [
-      {:rect, path: "../rect"},
+      {:rext, path: "../rext"},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:jump_credo_checks, "~> 0.4", only: [:dev, :test], runtime: false},
