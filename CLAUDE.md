@@ -7,11 +7,11 @@ covers only what's specific to rext_dev.
 
 ## What lives here (and why separate)
 
-rext_dev holds the code that *runs, connects to, and drives* a rext app — and,
-soon, the MCP server. It must **never** be a dependency of a shipped app, same
-rule as `mob_dev`. The agent harness is split deliberately: the
-introspection/drive surface (`Rext.Test`) lives in `rext` so it's RPC-able on
-the running node; the client side (connect, run, dashboard, MCP) lives here.
+rext_dev holds the code that *runs, connects to, and drives* a rext app. It must
+**never** be a dependency of a shipped app, same rule as `mob_dev`. The agent
+harness is split deliberately: the introspection/drive surface (`Rext.Test`)
+lives in `rext` so it's RPC-able on the running node; the client side (connect,
+run, dashboard) lives here.
 
 Desktop makes this layer far lighter than mobile: the node is local, so there's
 no adb/simctl device discovery and no EPMD tunnel setup that dominate `mob_dev`.
@@ -41,10 +41,10 @@ a sibling (CI does a second checkout). No Erlang source here → no erlfmt step.
 
 ## Follow-ups
 
-- **rext_mcp**: `rext_new` emits `.mcp.json` pointing at `rext_mcp.server`. Fold
-  the MCP server in here first (typed tools backed by RPC into the BEAM,
-  mirroring the planned `mob_mcp`); split a separate `rext_mcp` package only if
-  it grows.
+- **No MCP server (decided).** Agents drive rext via `mix rext.connect` +
+  `Rext.Test` over dist — same as mob in practice. An MCP layer would only help a
+  non-shell MCP client; revisit only if that need appears. See
+  `../rext/decisions/2026-07-22-skip-rext-mcp.md`.
 - **GUI host launch**: `mix rext.run` currently launches the socket renderer.
   Add a mode that builds/launches the in-process `rext_host` once its GUI layer
   lands (see `../rext/CLAUDE.md`).

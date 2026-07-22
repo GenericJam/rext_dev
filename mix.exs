@@ -12,7 +12,7 @@ defmodule RextDev.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
-      description: "Dev + agent tooling for rext: run, connect, and (soon) the MCP server.",
+      description: "Dev + agent tooling for rext: mix rext.run and mix rext.connect.",
       package: package(),
       docs: docs(),
       source_url: @source_url

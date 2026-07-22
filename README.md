@@ -2,8 +2,7 @@
 
 Dev + agent tooling for [rext](https://github.com/GenericJam/rext) — a
 BEAM-on-desktop UI framework for Elixir. Never a dependency of a shipped app;
-this is the layer that runs, connects to, and (soon) exposes an MCP server over
-a running rext application.
+this is the layer that runs and connects to a running rext application.
 
 Add it as a dev dependency alongside `rext`:
 
@@ -22,13 +21,13 @@ Add it as a dev dependency alongside `rext`:
 
 ## Why a separate package
 
-Same reason mob splits `mob_dev`: deploy/run/connect/dashboard/MCP code must
+Same reason mob splits `mob_dev`: run/connect/dashboard code must
 never end up as a dependency of the distributed `.app`. On desktop the dev loop
 is far lighter than mobile (local dist, no device discovery, no tunnels), but
 the separation still matters for a clean shipped artifact.
 
 The agent harness itself is split deliberately: the introspection/drive surface
 (`Rext.Test`, and the native tree-walk) lives in `rext` so it's RPC-able on the
-running node; the *client* side (connect, dashboard, MCP) lives here.
+running node; the *client* side (connect, dashboard) lives here.
 
 See `CLAUDE.md` for the full picture.
