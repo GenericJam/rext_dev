@@ -81,4 +81,94 @@ defmodule RextDev.Release do
     powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0launcher.ps1"
     """
   end
+
+  @stray_artifacts ["release.out.log", "release.err.log", "bin/erl_crash.dump", "erl_crash.dump"]
+
+  @doc """
+  Delete runtime artifacts the launcher/BEAM leave behind in a release root
+  from a prior local run (`release.out.log`/`.err.log` from `launcher_ps1`'s
+  redirects, `erl_crash.dump` from a crashed BEAM) — anyone packaging this
+  directory further (an installer, a plain zip) would otherwise ship them.
+  Idempotent: missing files are silently skipped.
+  """
+  @spec clean_stray_artifacts!(String.t()) :: :ok
+  def clean_stray_artifacts!(release_root) do
+    for rel <- @stray_artifacts, do: File.rm(Path.join(release_root, rel))
+    :ok
+  end
+
+  @doc "Where `mix rext.installer` writes the generated .iss and compiled setup.exe — a sibling of `rel/`, never inside it (the installer output must not end up inside its own [Files] source tree)."
+  @spec installer_output_dir() :: String.t()
+  def installer_output_dir, do: Path.join(["_build", "prod", "installer"])
+
+  @doc "Humanize an app atom into a display name: :rext_demo -> \"Rext Demo\"."
+  @spec display_name(atom()) :: String.t()
+  def display_name(app) do
+    app
+    |> to_string()
+    |> String.split("_")
+    |> Enum.map_join(" ", &String.capitalize/1)
+  end
+
+  @doc """
+  A GUID-shaped, stable-per-app identifier for Inno Setup's `AppId` (its
+  upgrade-detection key across installer runs). Not a real UUID (no
+  version/variant bits set) — Inno doesn't care, it just wants the same app to
+  produce the same value on every rebuild, and different apps to never collide.
+  """
+  @spec app_guid(atom()) :: String.t()
+  def app_guid(app) do
+    <<a::binary-4, b::binary-2, c::binary-2, d::binary-2, e::binary-6>> =
+      :crypto.hash(:md5, "rext-installer:" <> to_string(app))
+
+    [a, b, c, d, e] |> Enum.map_join("-", &Base.encode16(&1, case: :upper))
+  end
+
+  @doc """
+  Render the Inno Setup script for `app`'s cold-install path: packages
+  whatever `mix rext.release` already produced (release + renderer +
+  launcher) as-is, adds Start Menu / optional desktop shortcuts pointing at
+  the launcher, and stops the release on uninstall so it doesn't orphan a
+  running `erl.exe`.
+  """
+  @spec installer_iss(atom(), String.t(), String.t()) :: String.t()
+  def installer_iss(app, version, publisher) do
+    name = display_name(app)
+    release_root_abs = release_root(app) |> Path.absname() |> String.replace("/", "\\")
+    output_dir_abs = installer_output_dir() |> Path.absname() |> String.replace("/", "\\")
+
+    """
+    [Setup]
+    AppId={{#{app_guid(app)}}}
+    AppName=#{name}
+    AppVersion=#{version}
+    AppPublisher=#{publisher}
+    DefaultDirName={autopf}\\#{name}
+    DefaultGroupName=#{name}
+    DisableProgramGroupPage=yes
+    ArchitecturesAllowed=x64compatible
+    ArchitecturesInstallIn64BitMode=x64compatible
+    OutputDir=#{output_dir_abs}
+    OutputBaseFilename=#{app}-#{version}-setup
+    Compression=lzma2
+    SolidCompression=yes
+    UninstallDisplayIcon={app}\\bin\\run.bat
+
+    [Files]
+    Source: "#{release_root_abs}\\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
+
+    [Tasks]
+    Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional shortcuts:"
+
+    [Icons]
+    Name: "{group}\\#{name}"; Filename: "{app}\\bin\\run.bat"
+    Name: "{autodesktop}\\#{name}"; Filename: "{app}\\bin\\run.bat"; Tasks: desktopicon
+
+    [Run]
+    Filename: "{app}\\bin\\run.bat"; Description: "Launch #{name} now"; Flags: nowait postinstall skipifsilent
+
+    [UninstallRun]
+    Filename: "{app}\\bin\\#{app}.bat"; Parameters: "stop"; Flags: runhidden; RunOnceId: "StopRelease"
+    """
+  end
 end

@@ -43,6 +43,7 @@ defmodule Mix.Tasks.Rext.Release do
     build_release!()
     build_renderer!(app)
     write_launcher!(app, window_id)
+    Release.clean_stray_artifacts!(Release.release_root(app))
 
     Mix.shell().info("""
 
