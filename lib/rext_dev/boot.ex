@@ -2,15 +2,17 @@ defmodule RextDev.Boot do
   @moduledoc """
   Boot helper invoked by `mix rext.run` inside a freshly-named distributed VM.
 
-  Opens the app's windows, then launches the native render backend for the app's
-  primary window — building the renderer first if it isn't built yet, so
-  `mix rext.run` is a genuine one-command launch. Kept out of `rext` (the runtime
-  lib) because launching/building the renderer is a dev-only concern that must
-  never be a dependency of a shipped app.
+  The app's own `Application.start/2` already opened its windows (via
+  `Rext.boot/1`) by the time this runs — that has to hold for a release too, so
+  it can't live only in dev tooling. This module's job is just launching the
+  native render backend for the app's primary window — building it first if it
+  isn't built yet, so `mix rext.run` is a genuine one-command launch. Kept out of
+  `rext` (the runtime lib) because launching/building the renderer is a dev-only
+  concern that must never be a dependency of a shipped app.
   """
   require Logger
 
-  @doc "Open the configured app's windows and launch the render backend."
+  @doc "Launch the render backend for the configured app's primary window."
   @spec run() :: :ok
   def run do
     case Application.get_env(:rext, :app) do
@@ -18,8 +20,6 @@ defmodule RextDev.Boot do
         Logger.error("[rext.run] no app configured — set `config :rext, :app, MyApp`")
 
       app ->
-        Rext.boot(app)
-        Logger.info("[rext.run] booted #{inspect(app)} windows")
         maybe_launch_renderer(primary_window(app))
     end
 
