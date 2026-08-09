@@ -20,7 +20,7 @@ defmodule RextDev.Boot do
         Logger.error("[rext.run] no app configured — set `config :rext, :app, MyApp`")
 
       app ->
-        maybe_launch_renderer(primary_window(app))
+        Enum.each(window_ids(app), &maybe_launch_renderer/1)
     end
 
     :ok
@@ -29,9 +29,23 @@ defmodule RextDev.Boot do
   @doc false
   @spec primary_window(module()) :: String.t()
   def primary_window(app) do
+    case window_ids(app) do
+      [first | _] -> first
+      [] -> "main"
+    end
+  end
+
+  @doc """
+  Every window id the app declares, in declaration order.
+
+  One renderer surface draws one window, so a multi-window app needs one
+  renderer process per window — this is the list `run/0` launches against.
+  """
+  @spec window_ids(module()) :: [String.t()]
+  def window_ids(app) do
     case app.windows() do
-      [{_mod, opts} | _] -> to_string(opts[:id] || "main")
-      _ -> "main"
+      [_ | _] = windows -> for {_mod, opts} <- windows, do: to_string(opts[:id] || "main")
+      _ -> ["main"]
     end
   end
 
@@ -71,9 +85,29 @@ defmodule RextDev.Boot do
         System.cmd("open", open_args(app, port, window_id, log), stderr_to_stdout: true)
 
       if out != "", do: IO.write(out)
-      Logger.info("[rext.run] render backend exited (#{status}); log: #{log} — shutting down")
-      System.halt(0)
+
+      # Halt only once every window's renderer is gone. Closing one window of a
+      # multi-window app must not take the other windows down with it — that
+      # would make "another view is another window" unusable.
+      case renderers_remaining() do
+        0 ->
+          Logger.info("[rext.run] last render backend exited (#{status}); log: #{log} — halting")
+          System.halt(0)
+
+        n ->
+          Logger.info("[rext.run] render backend for #{window_id} exited (#{status}); #{n} left")
+      end
     end)
+  end
+
+  # How many renderer surfaces are still attached to the bridge. `open -W`
+  # returns when its app quits, so by the time we ask, this renderer is already
+  # off the bridge's books.
+  defp renderers_remaining do
+    length(Rext.Bridge.renderers())
+  rescue
+    # The bridge is gone (app shutting down) — nothing left to wait for.
+    _ -> 0
   end
 
   @doc false

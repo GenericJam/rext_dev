@@ -21,6 +21,28 @@ defmodule RextDev.BootTest do
     end
   end
 
+  describe "window_ids/1" do
+    test "returns every declared window, in declaration order" do
+      assert Boot.window_ids(TwoWindowApp) == ["main", "mirror"]
+    end
+
+    test "defaults a window with no id to \"main\"" do
+      assert Boot.window_ids(NoIdApp) == ["main"]
+    end
+
+    test "an app declaring no windows still yields one surface" do
+      defmodule EmptyApp do
+        def windows, do: []
+      end
+
+      assert Boot.window_ids(EmptyApp) == ["main"]
+    end
+
+    test "primary_window/1 is the head of window_ids/1" do
+      assert Boot.primary_window(TwoWindowApp) == hd(Boot.window_ids(TwoWindowApp))
+    end
+  end
+
   describe "app_bundle/1" do
     test "derives the .app bundle from the inner executable path" do
       bin = "/x/native/macos/RextRenderer.app/Contents/MacOS/rext_renderer"
