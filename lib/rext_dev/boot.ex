@@ -65,7 +65,10 @@ defmodule RextDev.Boot do
   defp launch_renderer(bin, window_id) do
     app = app_bundle(bin)
     port = Integer.to_string(Rext.Bridge.port())
-    log = Path.join(System.tmp_dir!(), "rext_renderer.log")
+    # Per window: multi-window launches one renderer per window, and a shared
+    # path meant they overwrote each other's diagnostics — which is exactly the
+    # log you need when one window misbehaves and the other doesn't.
+    log = Path.join(System.tmp_dir!(), "rext_renderer_#{window_id}.log")
 
     # Launch the .app through LaunchServices (`open`), NOT by exec'ing the inner
     # binary. A GUI app spawned as a BEAM port child runs under the BEAM's
