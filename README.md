@@ -30,4 +30,4 @@ The agent harness itself is split deliberately: the introspection/drive surface
 (`Rext.Test`, and the native tree-walk) lives in `rext` so it's RPC-able on the
 running node; the *client* side (connect, dashboard) lives here.
 
-See `CLAUDE.md` for the full picture.
+See `AGENTS.md` for the full picture.
